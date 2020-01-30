@@ -1,4 +1,4 @@
-#list(mutable sequence - 값이 변할 수 있음)
+#list(mutable sequence - 값이 변할 수 있음), [] 사용
 days = ["Mon", "Tue", "Wed", "Thur", "Fri"];
 
 print(type(days));
