@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup;
 LIMIT = 50;
 INDEED_URL = f"https://kr.indeed.com/jobs?q=python&limit={LIMIT}";
 
+#페이지 숫자
 def extract_indeed_pages():
   indeed_result = requests.get(INDEED_URL);
 
@@ -23,17 +24,39 @@ def extract_indeed_pages():
 
   return max_page;
 
-def extract_indeed_jobs(last_page):
-  jobs = [];
+#일자리, 회사, 위치
+def extract_job(html):
+  title = html.find("div", {"class": "title"}).find("a")["title"]; #일자리
+  company = html.find("span", {"class": "company"});
 
-  #for page in range(last_page):
-  result = requests.get(f"{INDEED_URL}&start={0 * LIMIT}");
+  company_anchor = company.find("a");
 
-  indeed_soup = BeautifulSoup(result.text, "html.parser");
-  results = indeed_soup.find_all("div", {"class": "jobsearch-SerpJobCard"});
+  if company_anchor is not None: #span 안의 company에 링크가 있을 때
+    company = str(company_anchor.string);
+  else: #span 안의 company에 링크가 없을 때
+    company = str(company.string);
+    
+  company = company.strip(); #공백 삭제
+
+  location = html.find("div", {"class": "recJobLoc"})["data-rc-loc"]; #위치
+  job_id = html["data-jk"];
   
-  for result in results:
-    title = result.find("div", {"class": "title"}).find("a")["title"];
-    print(title);
+  return {'title': title, 'company': company, 'location': location, 'link': f"https://kr.indeed.com/viewjob?jk={job_id}"};
+
+#총괄
+def extract_indeed_jobs(last_page):
+  jobs = []; #배열
+
+  for page in range(last_page):
+    print(f"Scrapping page {page}");
+
+    result = requests.get(f"{INDEED_URL}&start={0 * LIMIT}");
+
+    indeed_soup = BeautifulSoup(result.text, "html.parser");
+    results = indeed_soup.find_all("div", {"class": "jobsearch-SerpJobCard"}); #find_all : 모든 리스트를 가져옴 / find : 첫번째만 가져옴
+  
+    for result in results: #result(=html) : 일자리
+      job = extract_job(result);
+      jobs.append(job); #jobs에 job을 넣어줌
 
   return jobs;
