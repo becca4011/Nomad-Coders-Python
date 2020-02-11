@@ -2,17 +2,20 @@ import requests;
 from bs4 import BeautifulSoup;
 
 LIMIT = 50;
-INDEED_URL = f"https://kr.indeed.com/jobs?q=python&limit={LIMIT}";
+URL = f"https://kr.indeed.com/jobs?q=python&limit={LIMIT}";
 
-#페이지 숫자
-def extract_indeed_pages():
-  indeed_result = requests.get(INDEED_URL);
+#페이지
+def extract_pages():
+  result = requests.get(URL);
+  soup = BeautifulSoup(result.text, "html.parser"); 
+  #result.text는 html을 가져옴 / indeed의 페이지 숫자를 가져옴
 
-  indeed_soup = BeautifulSoup(indeed_result.text, "html.parser"); #indeed_result.text는 html을 가져옴 / indeed의 페이지 숫자를 가져옴
+  pagination = soup.find("div", {"class":"pagination"}); 
+  #indeed의 pagination을 찾음
 
-  pagination = indeed_soup.find("div", {"class":"pagination"}); #indeed의 pagination을 찾음
-
-  links = pagination.find_all('a'); #pagination의 모든 링크를 찾음, a = anchor
+  links = pagination.find_all('a'); 
+  #pagination의 모든 링크를 찾음, a = anchor
+  
   pages = [];
 
   for link in links[0:-1]: #마지막 item은 제외
@@ -29,14 +32,18 @@ def extract_job(html):
   title = html.find("div", {"class": "title"}).find("a")["title"]; #일자리
   company = html.find("span", {"class": "company"});
 
-  company_anchor = company.find("a");
+  if company:
+    company_anchor = company.find("a");
 
-  if company_anchor is not None: #span 안의 company에 링크가 있을 때
-    company = str(company_anchor.string);
-  else: #span 안의 company에 링크가 없을 때
-    company = str(company.string);
+    if company_anchor is not None: #span 안의 company에 링크가 있을 때
+      company = str(company_anchor.string);
+    else: #span 안의 company에 링크가 없을 때
+      company = str(company.string);
     
-  company = company.strip(); #공백 삭제
+    company = company.strip(); #공백 삭제
+
+  else:
+    company = None;
 
   location = html.find("div", {"class": "recJobLoc"})["data-rc-loc"]; #위치
   job_id = html["data-jk"];
@@ -50,13 +57,20 @@ def extract_indeed_jobs(last_page):
   for page in range(last_page):
     print(f"Scrapping page {page}");
 
-    result = requests.get(f"{INDEED_URL}&start={0 * LIMIT}");
+    result = requests.get(f"{URL}&start={page * LIMIT}");
 
-    indeed_soup = BeautifulSoup(result.text, "html.parser");
-    results = indeed_soup.find_all("div", {"class": "jobsearch-SerpJobCard"}); #find_all : 모든 리스트를 가져옴 / find : 첫번째만 가져옴
+    soup = BeautifulSoup(result.text, "html.parser");
+    results = soup.find_all("div", {"class": "jobsearch-SerpJobCard"}); 
+    #find_all : 모든 리스트를 가져옴 / find : 첫번째만 가져옴
   
     for result in results: #result(=html) : 일자리
       job = extract_job(result);
       jobs.append(job); #jobs에 job을 넣어줌
 
   return jobs;
+
+def get_jobs():
+  last_page = extract_pages();
+  jobs = extract_indeed_jobs(last_page);
+  
+  return(jobs);
