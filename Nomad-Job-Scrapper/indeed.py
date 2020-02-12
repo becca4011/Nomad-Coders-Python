@@ -27,7 +27,7 @@ def extract_pages():
 
   return max_page;
 
-#일자리, 회사, 위치
+#일자리, 회사, 위치, 지원링크
 def extract_job(html):
   title = html.find("div", {"class": "title"}).find("a")["title"]; #일자리
   company = html.find("span", {"class": "company"});
@@ -55,7 +55,7 @@ def extract_indeed_jobs(last_page):
   jobs = []; #배열
 
   for page in range(last_page):
-    print(f"Scrapping page {page}");
+    print(f"Scrapping Indeed Page : {page}");
 
     result = requests.get(f"{URL}&start={page * LIMIT}");
 
